@@ -10,3 +10,7 @@ This repository currently contains the latest version publicly available from th
 - Original download page: https://www.autoitscript.com/forum/files/file/358-xmlau3-formerly-xmlwrapperexau3/
 
 The current repository import is intended to preserve the latest available public release as a GitHub-hosted baseline for future maintenance, documentation cleanup, and further development.
+
+## Authors and contributors
+
+XML.au3 is maintained by mLipok and is based on earlier XML DOM Wrapper work by Eltorro. The UDF also preserves contributions and modifications from Weaponx, drlava, Lukasz Suleja, oblique, Mike Rerick, Tom Hohmann, guinness, GMK, and other AutoIt community contributors noted in the source history.
