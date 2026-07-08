@@ -14,3 +14,9 @@ The current repository import is intended to preserve the latest available publi
 ## Authors and contributors
 
 XML.au3 is maintained by mLipok and is based on earlier XML DOM Wrapper work by Eltorro. The UDF also preserves contributions and modifications from Weaponx, drlava, Lukasz Suleja, oblique, Mike Rerick, Tom Hohmann, guinness, GMK, and other AutoIt community contributors noted in the source history.
+
+## Discussion and support
+
+Discussion, questions, and support for this UDF can be continued in the AutoIt Forum support topic:
+
+- https://www.autoitscript.com/forum/topic/176895-xmlau3-beta-support-topic/
