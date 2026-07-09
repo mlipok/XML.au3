@@ -1,11 +1,12 @@
 #include-once
 ;~ #include <XMLConstants.au3>
-#include <FileConstants.au3>
-#include <StringConstants.au3>
 #include <AutoItConstants.au3>
+#include <FileConstants.au3>
+#include <String.au3>
+#include <StringConstants.au3>
 #include "ADO_CONSTANTS.au3"
 
-#AutoIt3Wrapper_Au3Check_Parameters=-d -w 1 -w 2 -w 3 -w- 4 -w 5 -w 6 -w 7
+#AutoIt3Wrapper_Au3Check_Parameters=-d -w 1 -w 2 -w 3 -w 4 -w 5 -w 6 -w 7
 #Tidy_Parameters=/sort_funcs /reel
 
 #Region XML.au3 - UDF Header
@@ -18,7 +19,7 @@
 ; Author(s) .....: mLipok, Eltorro, Weaponx, drlava, Lukasz Suleja, oblique, Mike Rerick, Tom Hohmann, guinness, GMK
 ; Version .......: "1.1.1.13" ; _XML_MiscProperty_UDFVersion()
 
-#CS
+#cs
 	This UDF is created on the basis of:
 	https://www.autoitscript.com/forum/topic/19848-xml-dom-wrapper-com/
 	For this reason, I attach also the last known (to me) previous version ($_XMLUDFVER = "1.0.3.98"  _XMLDomWrapper_1.0.3.98_CN.au3 )
@@ -39,10 +40,10 @@
 	. The unfortunate nature of both the scripts is that the func return results are strings or arrays instead of objects.
 	.
 	I want to: USE THIS CONCEPT:
-	.   All function should use Refernce to the object as first Function parameter
+	.   All function should use Reference to the object as first Function parameter
 	.   All function should return in most cases objects. There should be separate functions to Change Object collection to array
 	.   All function should use COM Error Handler in local scope.
-	.   All function should return @error which are defined in Region XMLWrapperEx.au3 - ERROR Enums
+	.   All function should return @error which are defined in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN
 	.	All function should have the same naming convention
 	.	All variables should have the same naming convention
 	.	There should not to be any Global Variable - exception is $__g_oXMLDOM_EventsHandler
@@ -53,9 +54,9 @@
 
 	. MAIN MOTTO:  "Programs are meant to be read by humans, and only incidentally for computers to execute." - Donald Knuth
 
-#CE
+#ce
 
-#CS
+#cs
 	; !!!!!!!!!!!!!!!!  the previous version of UDF
 	; Author ........: Stephen Podhajecki - Eltorro <gehossafats@netmdc.com>
 	; Author ........: Weaponx
@@ -418,15 +419,20 @@
 	. Added: Function: _XML_Base64Encode() - mLipok
 	. Added: Function: _XML_Base64Decode() - mLipok
 	. Fixed: bug in: _XML_Array_AddName() - krupa
-	. Changed: $ADOENUM_ad* >>> $ADO_ad** - to be coherent with ADO.au3 UDF - mLipok
+	. Changed: $ADOENUM_ad* >> $ADO_ad** - to be coherent with ADO.au3 UDF - mLipok
 	.
-	2017/xx/xx
-	"1.1.1.xx"
-	.
-	.
-	.
-	.
-	.
+	2021/10/22
+	"1.1.1.14"
+	. Renamed: Function: _XML_Validate_File >> _XML_ValidateFile - TheDcoder
+	.			https://www.autoitscript.com/forum/topic/176895-xmlau3-beta-support-topic/?do=findComment&comment=1368323
+	. Added: Function: _XML_GetValue - new Parameter: $bReturnFirstAsString = False - mLipok
+	. Fixed: Function: _XML_CreateFile - better error handling - mLipok
+	. Changed: Function: _XML_CreateRootNode() return $oNode on success - mLipok
+	. Changed: Function: _XML_CreateDOMDocument() - added parameter $sEncoding - mLipok
+	. Changed: Function: _XML_CreateDOMDocument() - added parameter $sRoot - mLipok
+	. Changed: Function: _XML_CreateFile() - parameter $bUTF >> $sEncoding - mLipok !!! SCRIPT BREAKING CHANGES
+	. REFACTORED: Function: _XML_CreateFile() - using: _XML_CreateDOMDocument() - mLipok
+	. variable used in loops are named with sufix "$IDX_" like this For $IDX_Attribute = 0 To $oAttributes_coll.length - 1 - mLipok
 	.
 
 	@LAST - this keyword is usefull for quick jumping here
@@ -443,7 +449,7 @@
 	. TODO: GMK: Rename _XML_Transform ==> _XML_TransformNodeToObj (?)
 	. TODO: GMK: Why not combine _XML_UpdateField and _XML_UpdateField2?  Would inputting parameters for a single node XPath not work the same for _XML_UpdateField2 as it would for _XML_UpdateField?
 
-#CE
+#ce
 
 ; #CURRENT# =====================================================================================================================
 ; _XML_CreateAttribute
@@ -510,6 +516,7 @@
 #EndRegion XML.au3 - UDF Header
 ; #VARIABLES# ===================================================================================================================
 #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN
+
 Global Enum _
 		$XML_ERR_SUCCESS, _ ; 				All is ok
 		$XML_ERR_GENERAL, _ ; 			The error which is not specifically defined.
@@ -612,6 +619,7 @@ Global Const $XML_DOCUMENT_READYSTATE_COMPLETED = 4
 #EndRegion XML.au3 - readyState Property (DOMDocument)
 
 #Region XML.au3 - Functions - Not yet reviewed
+
 ; ===============================================================================================================================
 ; XMLWrapper functions
 
@@ -623,7 +631,7 @@ Global Const $XML_DOCUMENT_READYSTATE_COMPLETED = 4
 ;                  $sXPath              - a string value. The XML tree path from root node (root/child/child..)
 ;                  $asAttributeList		- an array of strings. Column0=AtributeName, Column1=AtributeValue
 ; Return values .: On Success      	    - Returns $XML_RET_SUCCESS
-;                  On Failure           - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure           - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok, GMK
 ; Remarks .......:
@@ -646,11 +654,11 @@ Func _XML_CreateAttribute(ByRef $oXmlDoc, $sXPath, $asAttributeList)
 	Local Enum $eAttribute_Name, $eAttribute_Value
 	Local $oAttribute = Null
 	#forceref $oAttribute
-	For $iAttribute_idx = 0 To UBound($asAttributeList) - 1
-		$oAttribute = $oXmlDoc.createAttribute($asAttributeList[$iAttribute_idx][$eAttribute_Name]) ;, $sNameSpace) ; TODO Check why $sNameSpace
+	For $IDX_Attribute = 0 To UBound($asAttributeList) - 1
+		$oAttribute = $oXmlDoc.createAttribute($asAttributeList[$IDX_Attribute][$eAttribute_Name]) ;, $sNameSpace) ; TODO Check why $sNameSpace
 		If @error Then Return SetError($XML_ERR_COMERROR, @error, $XML_RET_FAILURE)
 
-		$oNode_Selected.SetAttribute($asAttributeList[$iAttribute_idx][$eAttribute_Name], $asAttributeList[$iAttribute_idx][$eAttribute_Value])
+		$oNode_Selected.SetAttribute($asAttributeList[$IDX_Attribute][$eAttribute_Name], $asAttributeList[$IDX_Attribute][$eAttribute_Value])
 		If $oXmlDoc.parseError.errorCode Then
 			Return SetError($XML_ERR_PARSE, $oXmlDoc.parseError.errorCode, $XML_RET_FAILURE)
 		EndIf
@@ -672,7 +680,7 @@ EndFunc   ;==>_XML_CreateAttribute
 ;                  $sCDATA     - a string value. CDATA value
 ;                  $sNameSpace - a string value. the namespace to specifiy if the xml uses one.
 ; Return values .: On Success  - Returns $XML_RET_SUCCESS
-;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......: fixme, won't append to exisiting node. must create new node.
@@ -714,7 +722,7 @@ EndFunc   ;==>_XML_CreateCDATA
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ;                  $sComment  - a string value. The comment to add the to the xml file.
 ; Return values .: On Success - Returns $XML_RET_SUCCESS
-;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -749,8 +757,8 @@ EndFunc   ;==>_XML_CreateComment
 ;                  $sNode      - a string value. The name of node to create.
 ;                  $sData      - a string value. The optional value to create
 ;                  $sNameSpace - a string value. the namespace to specifiy if the file uses one.
-; Return values .: On Success  - Returns $XML_RET_SUCCESS
-;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+; Return values .: On Success  - Returns $oNode
+;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok, GMK
 ; Remarks .......:
@@ -771,11 +779,11 @@ Func _XML_CreateRootNode(ByRef $oXmlDoc, $sNode, $sData = "", $sNameSpace = "")
 
 	If IsObj($oChild) Then
 		If $sData <> "" Then $oChild.text = $sData
-		$oXmlDoc.appendChild($oChild)
+		Local $oNode = $oXmlDoc.appendChild($oChild)
 		If @error Then Return SetError($XML_ERR_NODEAPPEND, @error, $XML_RET_FAILURE)
 
 		$oChild = 0
-		Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $XML_RET_SUCCESS)
+		Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $oNode)
 	EndIf
 
 	Return SetError($XML_ERR_GENERAL, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
@@ -790,10 +798,10 @@ EndFunc   ;==>_XML_CreateRootNode
 ;                  $aAttribute_Values          - The	attribute value(s) -- can be array
 ;                  $sData       - The optional value to give the node.
 ; Return values .: Success        $XML_RET_SUCCESS
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
-; Remarks .......: This function requires that each attribute name has a corresponding value.
+; Remarks .......: This function requires that each attribute name has a corresponding value passed as a STRING (both name and value).
 ; Related .......:
 ; Link ..........;
 ; Example .......; [yes/no]
@@ -819,13 +827,13 @@ Func _XML_CreateRootNodeWAttr(ByRef $oXmlDoc, $sNode, $aAttribute_Names, $aAttri
 				Return SetError($XML_ERR_GENERAL, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
 			EndIf
 
-			For $iAttribute_idx = 0 To UBound($aAttribute_Names) - 1
-				If $aAttribute_Names[$iAttribute_idx] = "" Then
+			For $IDX_Attribute = 0 To UBound($aAttribute_Names) - 1
+				If $aAttribute_Names[$IDX_Attribute] = "" Then
 					Return SetError($XML_ERR_GENERAL, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
 				EndIf
 
-				$oAttribute = $oXmlDoc.createAttribute($aAttribute_Names[$iAttribute_idx]) ;, $sNameSpace) ; TODO Check why $sNameSpace
-				$oChild_Node.SetAttribute($aAttribute_Names[$iAttribute_idx], $aAttribute_Values[$iAttribute_idx])
+				$oAttribute = $oXmlDoc.createAttribute($aAttribute_Names[$IDX_Attribute]) ;, $sNameSpace) ; TODO Check why $sNameSpace
+				$oChild_Node.SetAttribute($aAttribute_Names[$IDX_Attribute], $aAttribute_Values[$IDX_Attribute])
 			Next
 		Else
 			$oAttribute = $oXmlDoc.createAttribute($aAttribute_Names)
@@ -848,7 +856,7 @@ EndFunc   ;==>_XML_CreateRootNodeWAttr
 ; Parameters ....: $oXmlDoc   - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: On Success - Returns $XML_RET_SUCCESS
-;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ;                  |0 - No error
 ;                  |1 - Deletion error
 ;                  |2 - No object passed
@@ -867,12 +875,14 @@ Func _XML_DeleteNode(ByRef $oXmlDoc, $sXPath)
 	Local $oNodes_coll = _XML_SelectNodes($oXmlDoc, $sXPath)
 	If @error Then Return SetError(@error, @extended, $XML_RET_FAILURE)
 
+	Local $iRemoval_count = 0
 	For $oNode_enum In $oNodes_coll
 		If $oNode_enum.hasChildNodes Then
 			For $oNode_enum_Child In $oNode_enum.childNodes
 				If $oNode_enum_Child.nodeType = $XML_NODE_TEXT Then
 					If StringStripWS($oNode_enum_Child.text, $STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES) = "" Then
 						$oNode_enum.removeChild($oNode_enum_Child)
+						$iRemoval_count += 1
 					EndIf
 				EndIf
 			Next
@@ -880,7 +890,7 @@ Func _XML_DeleteNode(ByRef $oXmlDoc, $sXPath)
 		$oNode_enum.parentNode.removeChild($oNode_enum)
 	Next
 
-	Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $XML_RET_SUCCESS)
+	Return SetError($XML_ERR_SUCCESS, $iRemoval_count, $XML_RET_SUCCESS)
 EndFunc   ;==>_XML_DeleteNode
 
 ; #FUNCTION# ====================================================================================================================
@@ -890,7 +900,7 @@ EndFunc   ;==>_XML_DeleteNode
 ; Parameters ....: $oXmlDoc   - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: On Success - Returns array of fields text values (number of items is in [0][0])
-;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -916,9 +926,9 @@ Func _XML_GetAllAttrib(ByRef $oXmlDoc, $sXPath)
 		EndIf
 
 		ReDim $aResponse[$oAttributes_coll.length + 2][$XMLATTR_COLCOUNTER]
-		For $iAttribute_idx = 0 To $oAttributes_coll.length - 1
-			$aResponse[$iAttribute_idx + 1][$XMLATTR_COLNAME] = $oAttributes_coll.item($iAttribute_idx).nodeName
-			$aResponse[$iAttribute_idx + 1][$XMLATTR_COLVALUE] = $oAttributes_coll.item($iAttribute_idx).Value
+		For $IDX_Attribute = 0 To $oAttributes_coll.length - 1
+			$aResponse[$IDX_Attribute + 1][$XMLATTR_COLNAME] = $oAttributes_coll.item($IDX_Attribute).nodeName
+			$aResponse[$IDX_Attribute + 1][$XMLATTR_COLVALUE] = $oAttributes_coll.item($IDX_Attribute).Value
 		Next
 	Next
 	$aResponse[0][0] = $oAttributes_coll.length
@@ -941,7 +951,7 @@ EndFunc   ;==>_XML_GetAllAttrib
 ;                  |$array[n][0] = Name
 ;                  |$array[n][1] = Text
 ;                  |$array[n][2] = NamespaceURI
-;                  On Failure    - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure    - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -994,7 +1004,7 @@ EndFunc   ;==>_XML_GetChildren
 ; Parameters ....: $oXmlDoc    - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath     - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: On Success  - Returns an array of Node's names and text.
-;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -1034,7 +1044,7 @@ EndFunc   ;==>_XML_GetChildText
 ; Parameters ....: $oXmlDoc   - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: On Success - Returns an array of fields text values (count is in first element)
-;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok, GMK
 ; Remarks .......:
@@ -1057,11 +1067,11 @@ Func _XML_GetField(ByRef $oXmlDoc, $sXPath)
 		Local $aResponse[1] = [0], $sNodePath = ""
 		Local $iNodeMaxCount = $oNode_Selected.childNodes.length
 		Local $aRet
-		For $iNode_idx = 1 To $iNodeMaxCount
+		For $IDX_Node = 1 To $iNodeMaxCount
 			If $oNode_Selected.parentNode.nodeType = $XML_NODE_DOCUMENT Then
-				$sNodePath = "/" & $oNode_Selected.baseName & "/*[" & $iNode_idx & "]"
+				$sNodePath = "/" & $oNode_Selected.baseName & "/*[" & $IDX_Node & "]"
 			Else
-				$sNodePath = $oNode_Selected.baseName & "/*[" & $iNode_idx & "]"
+				$sNodePath = $oNode_Selected.baseName & "/*[" & $IDX_Node & "]"
 			EndIf
 
 			$aRet = _XML_GetValue($oXmlDoc, $sNodePath)
@@ -1086,7 +1096,7 @@ EndFunc   ;==>_XML_GetField
 ; Parameters ....: $oXmlDoc   - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: On Success - An array of node names from root, count in [0] element.
-;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -1152,7 +1162,7 @@ EndFunc   ;==>_XML_GetNodesPath
 ; Parameters ....: $oXML_Node - A valid node object
 ; Return values .: On Success - Path from root as string.
 ;                  On Failure - @TODO
-;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ;                  On Failure - An empty string and @error set to 1.
 ; Author ........: Eltorro
 ; Modified ......: mLipok
@@ -1200,7 +1210,7 @@ EndFunc   ;==>_XML_GetNodesPathInternal
 ; Parameters ....: $oXmlDoc   - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: On Success - @TODO
-;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Mike Rerick
 ; Modified.......:
 ; Remarks .......: Returns empty string if the XPath is not valid
@@ -1268,7 +1278,7 @@ EndFunc   ;==>_XML_GetParentNodeName
 ; Parameters ....: $oXmlDoc   - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: On Success - Returns an array of fields text values (count is in first element)
-;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ;                  |0 - No matching node. ; TODO
 ;                  |1 - No object passed. ; TODO
 ; Author ........: Eltorro
@@ -1278,13 +1288,13 @@ EndFunc   ;==>_XML_GetParentNodeName
 ; Link ..........;
 ; Example .......; [yes/no]
 ; ===============================================================================================================================
-Func _XML_GetValue(ByRef $oXmlDoc, $sXPath)
+Func _XML_GetValue(ByRef $oXmlDoc, $sXPath, $bReturnFirstAsString = False)
 	; Error handler, automatic cleanup at end of function
 	Local $oXML_COM_ErrorHandler = ObjEvent("AutoIt.Error", __XML_ComErrorHandler_InternalFunction)
 	#forceref $oXML_COM_ErrorHandler
 
 	Local $oNodes_coll = _XML_SelectNodes($oXmlDoc, $sXPath)
-	If @error Then Return SetError(@error, @extended, $XML_RET_FAILURE)
+	If @error Then Return SetError(@error, @extended, '')
 
 	Local $aResponse[1]
 	For $oNode_enum In $oNodes_coll
@@ -1302,7 +1312,8 @@ Func _XML_GetValue(ByRef $oXmlDoc, $sXPath)
 	Next
 
 	$aResponse[0] = UBound($aResponse) - 1
-	Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $aResponse)
+	If $bReturnFirstAsString Then Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $aResponse[1])
+	Return SetError($XML_ERR_SUCCESS, $aResponse[0], $aResponse)
 EndFunc   ;==>_XML_GetValue
 
 ; #FUNCTION# ====================================================================================================================
@@ -1316,7 +1327,7 @@ EndFunc   ;==>_XML_GetValue
 ;                  $sData      - [optional] Value to give the node
 ;                  $sNameSpace - [optional] Name Space
 ; Return values .: On Success  - Returns $XML_RET_SUCCESS
-;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: GMK
 ; Modified ......:
 ; Remarks .......:
@@ -1360,7 +1371,7 @@ EndFunc   ;==>_XML_InsertChildNode
 ;                  $sXPath     - a string value. The XML tree path from root node (root/child/child..)
 ;                  $sAttribute - a string value. The name of attribute node to delete
 ; Return values .: On Success  - Returns $XML_RET_SUCCESS
-;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -1395,7 +1406,7 @@ EndFunc   ;==>_XML_RemoveAttributeNode
 ;                  $sNodeNew_Name - a string value. The replacement node name.
 ;                  $sNameSpace    - [optional] a string value. Default is "".
 ; Return values .: On Success  - Returns $XML_RET_SUCCESS
-;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro adapted from http://www.perfectxml.com/msxmlAnswers.asp?Row_ID=65
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -1451,7 +1462,7 @@ EndFunc   ;==>_XML_ReplaceChild
 ;                  $sValue          		- The value to give the attribute (if $vAttributeNameOrList is a string); defaults to ""
 ;                  $iIndex          		- Used to specify a specific index for "same named" nodes.
 ; Return values .: Success          		- An array of fields text values
-;                  Failure          		- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure          		- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok, GMK
 ; Remarks .......:
@@ -1474,8 +1485,8 @@ Func _XML_SetAttrib(ByRef $oXmlDoc, $sXPath, $vAttributeNameOrList, $sValue = ""
 	If IsInt($iIndex) And $iIndex > 0 Then
 		If $iAttributes_count > 0 Then
 			ReDim $aResponse[1][$iAttributes_count]
-			For $iAttribute_idx = 0 To $iLastAttribute
-				$aResponse[0][$iAttribute_idx] = $oNodes_coll.item($iIndex).SetAttribute($vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLNAME], $vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLVALUE])
+			For $IDX_Attribute = 0 To $iLastAttribute
+				$aResponse[0][$IDX_Attribute] = $oNodes_coll.item($iIndex).SetAttribute($vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLNAME], $vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLVALUE])
 				If @error Then Return SetError($XML_ERR_PARAMETER, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
 			Next
 		Else
@@ -1485,16 +1496,16 @@ Func _XML_SetAttrib(ByRef $oXmlDoc, $sXPath, $vAttributeNameOrList, $sValue = ""
 	ElseIf $iIndex = Default Then
 		If $iAttributes_count > 0 Then
 			ReDim $aResponse[$oNodes_coll.length][$iAttributes_count]
-			For $iNode_idx = 0 To $oNodes_coll.length - 1
-				For $iAttribute_idx = 0 To $iLastAttribute
-					$aResponse[0][$iAttribute_idx] = $oNodes_coll.item($iNode_idx).SetAttribute($vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLNAME], $vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLVALUE])
+			For $IDX_Node = 0 To $oNodes_coll.length - 1
+				For $IDX_Attribute = 0 To $iLastAttribute
+					$aResponse[0][$IDX_Attribute] = $oNodes_coll.item($IDX_Node).SetAttribute($vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLNAME], $vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLVALUE])
 					If @error Then Return SetError($XML_ERR_PARAMETER, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
 				Next
 			Next
 		Else
 			ReDim $aResponse[$oNodes_coll.length]
-			For $iNode_idx = 0 To $oNodes_coll.length - 1
-				$aResponse[$iNode_idx] = $oNodes_coll.item($iNode_idx).SetAttribute($vAttributeNameOrList, $sValue)
+			For $IDX_Node = 0 To $oNodes_coll.length - 1
+				$aResponse[$IDX_Node] = $oNodes_coll.item($IDX_Node).SetAttribute($vAttributeNameOrList, $sValue)
 				If $oXmlDoc.parseError.errorCode Then
 					Return SetError($XML_ERR_PARSE, $oXmlDoc.parseError.errorCode, $XML_RET_FAILURE)
 				EndIf
@@ -1513,7 +1524,7 @@ EndFunc   ;==>_XML_SetAttrib
 ; Parameters ....: $oXmlDoc           - [in/out] an object. A valid DOMDocument object.
 ;                  $sXSL_FileFullPath - a string value. The stylesheet to use
 ; Return values .: On Success         - Returns $XML_RET_SUCCESS
-;                  On Failure         - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure         - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro , Modified by WeaponX
 ; Modified ......: mLipok
 ; Remarks .......: Ref XML Object will be overwriten - will contain Transformed Data
@@ -1577,9 +1588,9 @@ EndFunc   ;==>_XML_Transform
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ;                  $sData     - The data to update the node with.
 ; Return values .: On Success - Returns $XML_RET_SUCCESS
-;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
-; Modified ......: Weaponx, mLipok
+; Modified ......: Weaponx, mLipok, GMK
 ; Remarks .......:
 ; Related .......:
 ; Link ..........;
@@ -1591,12 +1602,15 @@ Func _XML_UpdateField(ByRef $oXmlDoc, $sXPath, $sData)
 	#forceref $oXML_COM_ErrorHandler
 
 	Local $oNode_Selected = _XML_SelectSingleNode($oXmlDoc, $sXPath)
-	If @error Then
-		Return SetError(@error, @extended, $XML_RET_FAILURE)
-	ElseIf $oNode_Selected.hasChildNodes Then
+	If @error Then _
+			Return SetError(@error, @extended, $XML_RET_FAILURE)
+	If Not $oNode_Selected.hasChildNodes And $oNode_Selected.nodetype <> $XML_NODE_ELEMENT And $oNode_Selected.nodetype <> $XML_NODE_TEXT Then _
+			Return SetError($XML_ERR_INVALIDNODETYPE, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
+
+	If $oNode_Selected.hasChildNodes Then
 		Local $bUpdateStatus = False
 		For $oNode_enum_Child In $oNode_Selected.childNodes()
-			If $oNode_enum_Child.nodetype = $XML_NODE_TEXT Then
+			If $oNode_enum_Child.nodetype = $XML_NODE_ELEMENT Or $oNode_enum_Child.nodetype = $XML_NODE_TEXT Then
 				$oNode_enum_Child.Text = $sData
 				$bUpdateStatus = True
 				ExitLoop
@@ -1609,10 +1623,11 @@ Func _XML_UpdateField(ByRef $oXmlDoc, $sXPath, $sData)
 			If @error Then Return SetError($XML_ERR_NODEAPPEND, @error, $XML_RET_FAILURE)
 		EndIf
 
-		Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $XML_RET_SUCCESS)
+	ElseIf $oNode_Selected.nodetype = $XML_NODE_ELEMENT Or $oNode_Selected.nodetype = $XML_NODE_TEXT Then
+		$oNode_Selected.Text = $sData
 	EndIf
 
-	Return SetError($XML_ERR_GENERAL, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
+	Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $XML_RET_SUCCESS)
 EndFunc   ;==>_XML_UpdateField
 
 ; #FUNCTION# ====================================================================================================================
@@ -1623,7 +1638,7 @@ EndFunc   ;==>_XML_UpdateField
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ;                  $sData     - The data to update the node with.
 ; Return values .: On Success - Returns $XML_RET_SUCCESS
-;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified.......: Weaponx, mLipok
 ; Remarks .......:
@@ -1656,14 +1671,14 @@ Func _XML_UpdateField2(ByRef $oXmlDoc, $sXPath, $sData)
 EndFunc   ;==>_XML_UpdateField2
 
 ; #FUNCTION# ====================================================================================================================
-; Name ..........: _XML_Validate_File
+; Name ..........: _XML_ValidateFile
 ; Description ...: Validates a document against a dtd.
-; Syntax ........: _XML_Validate_File($sXMLFile, $sNameSpace, $sXSD_FileFullPath)
+; Syntax ........: _XML_ValidateFile($sXMLFile, $sNameSpace, $sXSD_FileFullPath)
 ; Parameters ....: $sXMLFile          - The file to validate
 ;                  $sNameSpace        - xml namespace
 ;                  $sXSD_FileFullPath - DTD file to validate against.
 ; Return values .: On Success         - Returns $XML_RET_SUCCESS
-;                  On Failure         - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure         - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......: 	; TODO: Add such function but to work with object instead files ( I mean in memory validation )
@@ -1671,7 +1686,7 @@ EndFunc   ;==>_XML_UpdateField2
 ; Link ..........; https://msdn.microsoft.com/en-us/library/ms760267(v=vs.85).aspx
 ; Example .......; [yes/no]
 ; ===============================================================================================================================
-Func _XML_Validate_File($sXMLFile, $sNameSpace, $sXSD_FileFullPath)
+Func _XML_ValidateFile($sXMLFile, $sNameSpace, $sXSD_FileFullPath)
 	; Error handler, automatic cleanup at end of function
 	Local $oXML_COM_ErrorHandler = ObjEvent("AutoIt.Error", __XML_ComErrorHandler_InternalFunction)
 	#forceref $oXML_COM_ErrorHandler
@@ -1697,7 +1712,116 @@ Func _XML_Validate_File($sXMLFile, $sNameSpace, $sXSD_FileFullPath)
 	EndIf
 
 	Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $XML_RET_SUCCESS)
-EndFunc   ;==>_XML_Validate_File
+EndFunc   ;==>_XML_ValidateFile
+; #FUNCTION# ====================================================================================================================
+; Name ..........: XML_My_ErrorParser
+; Description ...: Changing $XML_ERR_ ... to human readable description
+; Syntax ........: XML_My_ErrorParser($iXMLWrapper_Error, $iXMLWrapper_Extended)
+; Parameters ....: $iXMLWrapper_Error	- an integer value.
+;                  $iXMLWrapper_Extended           - an integer value.
+; Return values .: description as string
+; Author ........: mLipok
+; Modified ......:
+; Remarks .......: This function is only example of how user can parse @error and @extended to human readable description
+; Related .......:
+; Link ..........:
+; Example .......: No
+; ===============================================================================================================================
+Func XML_My_ErrorParser($iXMLWrapper_Error, $iXMLWrapper_Extended = 0)
+	Local $sErrorInfo = ''
+	Switch $iXMLWrapper_Error
+		Case $XML_ERR_SUCCESS
+			$sErrorInfo = '$XML_ERR_SUCCESS=' & $XML_ERR_SUCCESS & @CRLF & 'All is ok.'
+		Case $XML_ERR_GENERAL
+			$sErrorInfo = '$XML_ERR_GENERAL=' & $XML_ERR_GENERAL & @CRLF & 'The error which is not specifically defined.'
+		Case $XML_ERR_COMERROR
+			$sErrorInfo = '$XML_ERR_COMERROR=' & $XML_ERR_COMERROR & @CRLF & 'COM ERROR OCCURED. Check @extended and your own error handler function for details.'
+		Case $XML_ERR_ISNOTOBJECT
+			$sErrorInfo = '$XML_ERR_ISNOTOBJECT=' & $XML_ERR_ISNOTOBJECT & @CRLF & 'No object passed to function'
+		Case $XML_ERR_INVALIDDOMDOC
+			$sErrorInfo = '$XML_ERR_INVALIDDOMDOC=' & $XML_ERR_INVALIDDOMDOC & @CRLF & 'Invalid object passed to function'
+		Case $XML_ERR_INVALIDATTRIB
+			$sErrorInfo = '$XML_ERR_INVALIDATTRIB=' & $XML_ERR_INVALIDATTRIB & @CRLF & 'Invalid object passed to function.'
+		Case $XML_ERR_INVALIDNODETYPE
+			$sErrorInfo = '$XML_ERR_INVALIDNODETYPE=' & $XML_ERR_INVALIDNODETYPE & @CRLF & 'Invalid object passed to function.'
+		Case $XML_ERR_OBJCREATE
+			$sErrorInfo = '$XML_ERR_OBJCREATE=' & $XML_ERR_OBJCREATE & @CRLF & 'Object can not be created.'
+		Case $XML_ERR_NODECREATE
+			$sErrorInfo = '$XML_ERR_NODECREATE=' & $XML_ERR_NODECREATE & @CRLF & 'Can not create Node - check also COM Error Handler'
+		Case $XML_ERR_NODEAPPEND
+			$sErrorInfo = '$XML_ERR_NODEAPPEND=' & $XML_ERR_NODEAPPEND & @CRLF & 'Can not append Node - check also COM Error Handler'
+		Case $XML_ERR_PARSE
+			$sErrorInfo = '$XML_ERR_PARSE=' & $XML_ERR_PARSE & @CRLF & 'Error: with Parsing objects, .parseError.errorCode=' & $iXMLWrapper_Extended & ' Use _XML_ErrorParser_GetDescription() for get details.'
+		Case $XML_ERR_PARSE_XSL
+			$sErrorInfo = '$XML_ERR_PARSE_XSL=' & $XML_ERR_PARSE_XSL & @CRLF & 'Error with Parsing XSL objects .parseError.errorCode=' & $iXMLWrapper_Extended & ' Use _XML_ErrorParser_GetDescription() for get details.'
+		Case $XML_ERR_LOAD
+			$sErrorInfo = '$XML_ERR_LOAD=' & $XML_ERR_LOAD & @CRLF & 'Error opening specified file.'
+		Case $XML_ERR_SAVE
+			$sErrorInfo = '$XML_ERR_SAVE=' & $XML_ERR_SAVE & @CRLF & 'Error saving file.'
+		Case $XML_ERR_PARAMETER
+			$sErrorInfo = '$XML_ERR_PARAMETER=' & $XML_ERR_PARAMETER & @CRLF & 'Wrong parameter passed to function.'
+		Case $XML_ERR_ARRAY
+			$sErrorInfo = '$XML_ERR_ARRAY=' & $XML_ERR_ARRAY & @CRLF & 'Wrong array parameter passed to function. Check array dimension and conent.'
+		Case $XML_ERR_XPATH
+			$sErrorInfo = '$XML_ERR_XPATH=' & $XML_ERR_XPATH & @CRLF & 'XPath syntax error - check also COM Error Handler.'
+		Case $XML_ERR_NONODESMATCH
+			$sErrorInfo = '$XML_ERR_NONODESMATCH=' & $XML_ERR_NONODESMATCH & @CRLF & 'No nodes match the XPath expression'
+		Case $XML_ERR_NOCHILDMATCH
+			$sErrorInfo = '$XML_ERR_NOCHILDMATCH=' & $XML_ERR_NOCHILDMATCH & @CRLF & 'There is no Child in nodes matched by XPath expression.'
+		Case $XML_ERR_NOATTRMATCH
+			$sErrorInfo = '$XML_ERR_NOATTRMATCH=' & $XML_ERR_NOATTRMATCH & @CRLF & 'There is no such attribute in selected node.'
+		Case $XML_ERR_DOMVERSION
+			$sErrorInfo = '$XML_ERR_DOMVERSION=' & $XML_ERR_DOMVERSION & @CRLF & 'DOM Version: ' & 'MSXML Version ' & $iXMLWrapper_Extended & ' or greater required for this function'
+		Case $XML_ERR_EMPTYCOLLECTION
+			$sErrorInfo = '$XML_ERR_EMPTYCOLLECTION=' & $XML_ERR_EMPTYCOLLECTION & @CRLF & 'Collections of objects was empty'
+		Case $XML_ERR_EMPTYOBJECT
+			$sErrorInfo = '$XML_ERR_EMPTYOBJECT=' & $XML_ERR_EMPTYOBJECT & @CRLF & 'Object is empty'
+		Case Else
+			$sErrorInfo = '=' & $iXMLWrapper_Error & @CRLF & 'NO ERROR DESCRIPTION FOR THIS @error'
+	EndSwitch
+
+	Local $sExtendedInfo = ''
+	Switch $iXMLWrapper_Error
+		Case $XML_ERR_COMERROR, $XML_ERR_NODEAPPEND, $XML_ERR_NODECREATE
+			$sExtendedInfo = 'COM ERROR NUMBER (@error returned via @extended) =' & $iXMLWrapper_Extended
+		Case $XML_ERR_PARAMETER
+			$sExtendedInfo = 'This @error was fired by parameter: #' & $iXMLWrapper_Extended
+		Case Else
+			Switch $iXMLWrapper_Extended
+				Case $XML_EXT_DEFAULT
+					$sExtendedInfo = '$XML_EXT_DEFAULT=' & $XML_EXT_DEFAULT & @CRLF & 'Default - Do not return any additional information'
+				Case $XML_EXT_XMLDOM
+					$sExtendedInfo = '$XML_EXT_XMLDOM=' & $XML_EXT_XMLDOM & @CRLF & '"Microsoft.XMLDOM" related Error'
+				Case $XML_EXT_DOMDOCUMENT
+					$sExtendedInfo = '$XML_EXT_DOMDOCUMENT=' & $XML_EXT_DOMDOCUMENT & @CRLF & '"Msxml2.DOMDocument" related Error'
+				Case $XML_EXT_XSLTEMPLATE
+					$sExtendedInfo = '$XML_EXT_XSLTEMPLATE=' & $XML_EXT_XSLTEMPLATE & @CRLF & '"Msxml2.XSLTemplate" related Error'
+				Case $XML_EXT_SAXXMLREADER
+					$sExtendedInfo = '$XML_EXT_SAXXMLREADER=' & $XML_EXT_SAXXMLREADER & @CRLF & '"MSXML2.SAXXMLReader" related Error'
+				Case $XML_EXT_MXXMLWRITER
+					$sExtendedInfo = '$XML_EXT_MXXMLWRITER=' & $XML_EXT_MXXMLWRITER & @CRLF & '"MSXML2.MXXMLWriter" related Error'
+				Case $XML_EXT_FREETHREADEDDOMDOCUMENT
+					$sExtendedInfo = '$XML_EXT_FREETHREADEDDOMDOCUMENT=' & $XML_EXT_FREETHREADEDDOMDOCUMENT & @CRLF & '"Msxml2.FreeThreadedDOMDocument" related Error'
+				Case $XML_EXT_XMLSCHEMACACHE
+					$sExtendedInfo = '$XML_EXT_XMLSCHEMACACHE=' & $XML_EXT_XMLSCHEMACACHE & @CRLF & '"Msxml2.XMLSchemaCache." related Error'
+				Case $XML_EXT_STREAM
+					$sExtendedInfo = '$XML_EXT_STREAM=' & $XML_EXT_STREAM & @CRLF & '"ADODB.STREAM" related Error'
+				Case $XML_EXT_ENCODING
+					$sExtendedInfo = '$XML_EXT_ENCODING=' & $XML_EXT_ENCODING & @CRLF & 'Encoding related Error'
+				Case Else
+					$sExtendedInfo = '$iXMLWrapper_Extended=' & $iXMLWrapper_Extended & @CRLF & 'NO ERROR DESCRIPTION FOR THIS @extened'
+			EndSwitch
+	EndSwitch
+	; return back @error and @extended for further debuging
+	Return SetError($iXMLWrapper_Error, $iXMLWrapper_Extended, _
+			'@error description:' & @CRLF & _
+			$sErrorInfo & @CRLF & _
+			@CRLF & _
+			'@extended description:' & @CRLF & _
+			$sExtendedInfo & @CRLF & _
+			'')
+
+EndFunc   ;==>XML_My_ErrorParser
 #EndRegion XML.au3 - Functions - Not yet reviewed
 
 #Region XML.au3 - Functions - Work in progress
@@ -1710,7 +1834,7 @@ EndFunc   ;==>_XML_Validate_File
 ;                  $sXPath				- a string value. The XML tree path from root node (root/child/child..)
 ;                  $iNodeType			- [optional] an integer value. Default value is Default which mean any type.
 ; Return values .: Success				- Number of nodes found (can be 0)
-;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro & DickB
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -1752,10 +1876,10 @@ EndFunc   ;==>_XML_GetNodesCount
 ;                  $sNodeText			 - [optional] a string value. Default is "".
 ;                  $sNameSpace           - [optional] a string value. Default is "".
 ; Return values .: Success				 - $XML_RET_SUCCESS
-;                  Failure				 - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure				 - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: GMK
 ; Modified ......:
-; Remarks .......: This function requires that each attribute name has a corresponding value.
+; Remarks .......: This function requires that each attribute name has a corresponding value passed as a STRING (both name and value).
 ; Related .......:
 ; Link ..........;
 ; Example .......; [yes/no]
@@ -1768,11 +1892,11 @@ Func _XML_InsertChildWAttr(ByRef $oXmlDoc, $sXPath, $sNodeName, $iItem = 0, $vAt
 	If (UBound($vAttributeNameOrList) > 0 And UBound($vAttributeNameOrList, $UBOUND_COLUMNS) <> $XMLATTR_COLCOUNTER) Then Return SetError($XML_ERR_ARRAY, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
 
 	Local $iLastAttribute = UBound($vAttributeNameOrList) - 1
-	For $iAttribute_idx = 0 To $iLastAttribute
+	For $IDX_Attribute = 0 To $iLastAttribute
 		If _
-				$vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLNAME] = '' _
-				Or (Not IsString($vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLNAME])) _
-				Or (Not IsString($vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLVALUE])) _
+				$vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLNAME] = '' _
+				Or (Not IsString($vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLNAME])) _
+				Or (Not IsString($vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLVALUE])) _
 				Then
 			Return SetError($XML_ERR_ARRAY, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
 		EndIf
@@ -1793,10 +1917,10 @@ Func _XML_InsertChildWAttr(ByRef $oXmlDoc, $sXPath, $sNodeName, $iItem = 0, $vAt
 		If $sNodeText <> "" Then $oChild_Temp.text = $sNodeText
 
 		If UBound($vAttributeNameOrList) Then
-			For $iAttribute_idx = 0 To UBound($vAttributeNameOrList) - 1
-				$oAttribute_Temp = $oXmlDoc.createAttribute($vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLNAME]) ;, $sNameSpace) ; TODO Check this comment
+			For $IDX_Attribute = 0 To UBound($vAttributeNameOrList) - 1
+				$oAttribute_Temp = $oXmlDoc.createAttribute($vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLNAME]) ;, $sNameSpace) ; TODO Check this comment
 				If @error Then ExitLoop ; TODO Description ?
-				$oAttribute_Temp.value = $vAttributeNameOrList[$iAttribute_idx][$XMLATTR_COLVALUE]
+				$oAttribute_Temp.value = $vAttributeNameOrList[$IDX_Attribute][$XMLATTR_COLVALUE]
 				$oChild_Temp.setAttributeNode($oAttribute_Temp)
 			Next
 		Else
@@ -1823,7 +1947,7 @@ EndFunc   ;==>_XML_InsertChildWAttr
 ;                  $sXPath              - a string value. The XML tree path from root node (root/child/child..)
 ;                  $sAttribute_name     - a string value.
 ; Return values .: Success        		- $XML_RET_SUCCESS
-;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -1864,7 +1988,7 @@ EndFunc   ;==>_XML_RemoveAttribute
 ;                  $sHTML_FileFullPath  - a string value.
 ;                  $iEncoding           - [optional] an integer value. Default is $FO_UTF8_NOBOM.
 ; Return values .: Success             - 1 and set @error = 0
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -1913,7 +2037,7 @@ EndFunc   ;==>_XML_TransformNode
 ; Syntax ........: __XML_IsValidObject_Attributes(ByRef $oAttributes)
 ; Parameters ....: $oAttributes                - [in/out] an object.
 ; Return values .: Success             - $XML_RET_SUCCESS
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -1937,7 +2061,7 @@ EndFunc   ;==>__XML_IsValidObject_Attributes
 ; Syntax ........: __XML_IsValidObject_DOMDocument(ByRef $oXML)
 ; Parameters ....: $oXML                - [in/out] an object.
 ; Return values .: Success             - $XML_RET_SUCCESS
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -1961,7 +2085,7 @@ EndFunc   ;==>__XML_IsValidObject_DOMDocument
 ; Syntax ........: __XML_IsValidObject_DOMDocumentOrElement(Byref $oXML)
 ; Parameters ....: $oXML                - [in/out] an object.
 ; Return values .: Success             - $XML_RET_SUCCESS
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Return values .: None
 ; Author ........: Your Name
 ; Modified ......:
@@ -1987,7 +2111,7 @@ EndFunc   ;==>__XML_IsValidObject_DOMDocumentOrElement
 ; Parameters ....: $oNode               - [in/out] an object.
 ;                  $iNodeType           - [optional] an integer value. Default value is Default this mean any type.
 ; Return values .: Success             - $XML_RET_SUCCESS
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -2019,7 +2143,7 @@ EndFunc   ;==>__XML_IsValidObject_Node
 ; Syntax ........: __XML_IsValidObject_NodesColl(ByRef $oNodes_coll)
 ; Parameters ....: $oNodes_coll                - [in/out] an object.
 ; Return values .: Success             - $XML_RET_SUCCESS
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -2049,10 +2173,10 @@ EndFunc   ;==>__XML_IsValidObject_NodesColl
 ;                  $sNodeText			- [optional] a string value. Default is "".
 ;                  $sNameSpace          - [optional] a string value. Default is "".
 ; Return values .: Success				- $XML_RET_SUCCESS
-;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
-; Remarks .......: This function requires that each attribute name has a corresponding value.
+; Remarks .......: This function requires that each attribute name has a corresponding value passed as a STRING (both name and value).
 ; Related .......:
 ; Link ..........;
 ; Example .......; [yes/no]
@@ -2062,17 +2186,18 @@ Func _XML_CreateChildWAttr(ByRef $oXmlDoc, $sXPath, $sNodeName, $aAttributeList 
 	Local $oXML_COM_ErrorHandler = ObjEvent("AutoIt.Error", __XML_ComErrorHandler_InternalFunction)
 	#forceref $oXML_COM_ErrorHandler
 
-	If IsArray($aAttributeList) Then
-		If Not (UBound($aAttributeList) > 0 And UBound($aAttributeList, $UBOUND_COLUMNS ) = $XMLATTR_COLCOUNTER) Then
-			Return SetError($XML_ERR_ARRAY, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
+	If UBound($aAttributeList) Then
+
+		If UBound($aAttributeList, $UBOUND_COLUMNS) <> $XMLATTR_COLCOUNTER Then
+			Return SetError($XML_ERR_ARRAY, $XML_EXT_PARAM4, $XML_RET_FAILURE)
 		EndIf
 
-		For $iAttribute_idx = 0 To UBound($aAttributeList) - 1
+		For $IDX_Attribute = 0 To UBound($aAttributeList) - 1
 			If _
-					$aAttributeList[$iAttribute_idx][$XMLATTR_COLNAME] = '' _
-					Or (Not IsString($aAttributeList[$iAttribute_idx][$XMLATTR_COLNAME])) _
-					Or $aAttributeList[$iAttribute_idx][$XMLATTR_COLVALUE] = '' _ ;  TODO: QUESTION: is Value must be not empty string ?
-					Or (Not IsString($aAttributeList[$iAttribute_idx][$XMLATTR_COLVALUE])) _
+					$aAttributeList[$IDX_Attribute][$XMLATTR_COLNAME] = '' _
+					Or (Not IsString($aAttributeList[$IDX_Attribute][$XMLATTR_COLNAME])) _
+					Or $aAttributeList[$IDX_Attribute][$XMLATTR_COLVALUE] = '' _ ;  TODO: QUESTION: is Value must be not empty string ?
+					Or (Not IsString($aAttributeList[$IDX_Attribute][$XMLATTR_COLVALUE])) _
 					Then
 				Return SetError($XML_ERR_ARRAY, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
 			EndIf
@@ -2086,9 +2211,7 @@ Func _XML_CreateChildWAttr(ByRef $oXmlDoc, $sXPath, $sNodeName, $aAttributeList 
 
 	Local $oChild_Temp = Null, $oAttribute_Temp = Null
 	For $oNode_enum In $oNodes_coll
-		If $sNameSpace = "" Then
-			If Not ($oNode_enum.namespaceURI = 0 Or $oNode_enum.namespaceURI = "") Then $sNameSpace = $oNode_enum.namespaceURI
-		EndIf
+		If $sNameSpace = Default And Not ($oNode_enum.namespaceURI = 0 Or $oNode_enum.namespaceURI = "") Then $sNameSpace = $oNode_enum.namespaceURI
 
 		$oChild_Temp = $oXmlDoc.createNode($XML_NODE_ELEMENT, $sNodeName, $sNameSpace)
 		If @error Then Return SetError($XML_ERR_NODECREATE, @error, $XML_RET_FAILURE)
@@ -2096,11 +2219,11 @@ Func _XML_CreateChildWAttr(ByRef $oXmlDoc, $sXPath, $sNodeName, $aAttributeList 
 		If $sNodeText <> "" Then $oChild_Temp.text = $sNodeText
 
 		If UBound($aAttributeList) Then
-			For $iAttribute_idx = 0 To UBound($aAttributeList) - 1
-				$oAttribute_Temp = $oXmlDoc.createAttribute($aAttributeList[$iAttribute_idx][$XMLATTR_COLNAME]) ;, $sNameSpace) ; TODO Check this comment
+			For $IDX_Attribute = 0 To UBound($aAttributeList) - 1
+				$oAttribute_Temp = $oXmlDoc.createAttribute($aAttributeList[$IDX_Attribute][$XMLATTR_COLNAME]) ;, $sNameSpace) ; TODO Check this comment
 				If @error Then ExitLoop ; TODO Description ?
 
-				$oAttribute_Temp.value = $aAttributeList[$iAttribute_idx][$XMLATTR_COLVALUE]
+				$oAttribute_Temp.value = $aAttributeList[$IDX_Attribute][$XMLATTR_COLVALUE]
 				$oChild_Temp.setAttributeNode($oAttribute_Temp)
 			Next
 		EndIf
@@ -2117,10 +2240,12 @@ EndFunc   ;==>_XML_CreateChildWAttr
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_CreateDOMDocument
 ; Description ...: Create DOMDocument Object
-; Syntax ........: _XML_CreateDOMDocument([$iDOM_Version = Default])
-; Parameters ....: $iDOM_Version        - [optional] an integer value. Default value is Default.
+; Syntax ........: _XML_CreateDOMDocument([$iDOM_Version = 3[, $sEncoding = 'UTF-8'[, $sRoot = '']]])
+; Parameters ....: $iDOM_Version        - [optional] an integer value. Default is 3.
+;                  $sEncoding           - [optional] a string value. Default is 'UTF-8'.
+;                  $sRoot               - [optional] a string value. Default is ''.
 ; Return values .: Success             - DOMDocument Object
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Modified ......: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -2128,15 +2253,15 @@ EndFunc   ;==>_XML_CreateChildWAttr
 ; Link ..........:
 ; Example .......: yes
 ; ===============================================================================================================================
-Func _XML_CreateDOMDocument($iDOM_Version = Default)
+Func _XML_CreateDOMDocument($iDOM_Version = 3, $sEncoding = 'UTF-8', $sRoot = '')
 	; Error handler, automatic cleanup at end of function
 	Local $oXML_COM_ErrorHandler = ObjEvent("AutoIt.Error", __XML_ComErrorHandler_InternalFunction)
 	#forceref $oXML_COM_ErrorHandler
 
 	If $iDOM_Version = Default Then
-		For $iDOM_Version_idx = 8 To 0 Step -1
-			If FileExists(@SystemDir & "\msxml" & $iDOM_Version_idx & ".dll") Then
-				$iDOM_Version = $iDOM_Version_idx
+		For $IDX_DOMVersion = 8 To 0 Step -1
+			If FileExists(@SystemDir & "\msxml" & $IDX_DOMVersion & ".dll") Then
+				$iDOM_Version = $IDX_DOMVersion
 				ExitLoop
 			EndIf
 		Next
@@ -2157,19 +2282,35 @@ Func _XML_CreateDOMDocument($iDOM_Version = Default)
 	__XML_IsValidObject_DOMDocument($oXmlDoc)
 	If @error Then Return SetError(@error, @extended, $XML_RET_FAILURE)
 
+	If $sEncoding Then
+		Local $oProcessingInstruction = $oXmlDoc.createProcessingInstruction("xml", 'version="1.0" encoding="' & $sEncoding & '"')
+		If @error Then Return SetError($XML_ERR_COMERROR, @error, $XML_RET_FAILURE)
+		If $oXmlDoc.parseError.errorCode Then
+			Return SetError($XML_ERR_PARSE, $oXmlDoc.parseError.errorCode, $XML_RET_FAILURE)
+		EndIf
+
+		$oXmlDoc.appendChild($oProcessingInstruction)
+		If @error Then Return SetError($XML_ERR_NODEAPPEND, @error, $XML_RET_FAILURE)
+	EndIf
+
+	If $sRoot Then
+		Local $oXML_RootElement = $oXmlDoc.createElement($sRoot)
+		$oXmlDoc.documentElement = $oXML_RootElement
+	EndIf
+
 	Return SetError($XML_ERR_SUCCESS, $XML_EXT_DEFAULT, $oXmlDoc)
 EndFunc   ;==>_XML_CreateDOMDocument
 
 ; #FUNCTION# ===================================================================
 ; Name ..........: _XML_CreateFile
 ; Description ...: Create a new blank metafile with header.
-; Syntax.........: _XML_CreateFile($sXML_FileFullPath, $sRoot[, $bUTF8 = False[, $iDOM_Version = Default]])
+; Syntax ........: _XML_CreateFile($sXML_FileFullPath, $sRoot[, $sEncoding = 'UTF-8'[, $iDOM_Version = Default]])
 ; Parameters ....: $sXML_FileFullPath - The xml filename with full path to create
 ;                  $sRoot			  - The root of the xml file to create
-;                  $bUTF8			  - boolean flag to specify UTF-8 encoding in header.
+;                  $sEncoding           - [optional] a string value. Default is 'UTF-8'.
 ;                  $iDOM_Version	  - specifically try to use the version supplied here.
 ; Return values .: On Success		  - Returns $oXmlDoc
-;                  On Failure		  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure		  - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2177,7 +2318,7 @@ EndFunc   ;==>_XML_CreateDOMDocument
 ; Link ..........;
 ; Example .......; [yes/no]
 ; ==============================================================================
-Func _XML_CreateFile($sXML_FileFullPath, $sRoot, $bUTF8 = False, $iDOM_Version = Default)
+Func _XML_CreateFile($sXML_FileFullPath, $sRoot, $sEncoding = 'UTF-8', $iDOM_Version = Default)
 	; Error handler, automatic cleanup at end of function
 	Local $oXML_COM_ErrorHandler = ObjEvent("AutoIt.Error", __XML_ComErrorHandler_InternalFunction)
 	#forceref $oXML_COM_ErrorHandler
@@ -2191,22 +2332,8 @@ Func _XML_CreateFile($sXML_FileFullPath, $sRoot, $bUTF8 = False, $iDOM_Version =
 		Return SetError($XML_ERR_PARAMETER, $XML_EXT_PARAM2, $XML_RET_FAILURE)
 	EndIf
 
-	Local $oXmlDoc = _XML_CreateDOMDocument($iDOM_Version)
+	Local $oXmlDoc = _XML_CreateDOMDocument($iDOM_Version, $sEncoding, $sRoot)
 	If @error Then Return SetError(@error, @extended, $XML_RET_FAILURE)
-
-	Local $oProcessingInstruction = $oXmlDoc.createProcessingInstruction("xml", 'version="1.0"' & (($bUTF8) ? ' encoding="UTF-8"' : ''))
-	If @error Then SetError($XML_ERR_COMERROR, @error, $XML_RET_FAILURE)
-	If $oXmlDoc.parseError.errorCode Then
-		Return SetError($XML_ERR_PARSE, $oXmlDoc.parseError.errorCode, $XML_RET_FAILURE)
-	EndIf
-
-	$oXmlDoc.appendChild($oProcessingInstruction)
-	If @error Then Return SetError($XML_ERR_NODEAPPEND, @error, $XML_RET_FAILURE)
-
-	If $sRoot <> '' Then
-		Local $oXML_RootElement = $oXmlDoc.createElement($sRoot)
-		$oXmlDoc.documentElement = $oXML_RootElement
-	EndIf
 
 	_XML_SaveToFile($oXmlDoc, $sXML_FileFullPath)
 	If @error Then _
@@ -2225,7 +2352,7 @@ EndFunc   ;==>_XML_CreateFile
 ;                  $sXPath              - a string value. The XML tree path from root node (root/child/child..)
 ;                  $iNodeIndex          - [optional] an integer value. Default is 0. Specify which node in collection should be used.
 ; Return values .: Success        		- Attributes collection of object,
-;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2262,7 +2389,7 @@ EndFunc   ;==>_XML_GetAllAttribIndex
 ; Parameters ....: $oXmlDoc 			- [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath              - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: Success        		- Child Nodes collection, and @extended contains collection length (count)
-;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2292,7 +2419,7 @@ EndFunc   ;==>_XML_GetChildNodes
 ; Parameters ....: $oNode_Selected  - [in/out] A valid node object.
 ;                  $sAttribute_Name - A string value. Attribute name.
 ; Return values .: On Success       - Returns string value of selected node
-;                  On Failure       - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure       - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -2333,7 +2460,7 @@ EndFunc   ;==>_XML_GetNodeAttributeValue
 ;                  $bValidateOnParse    - [optional] a boolean value. Default is True. Validate the document as it is being parsed
 ;                  $bPreserveWhiteSpace - [optional] a boolean value. Default is True.
 ; Return values .: Success        		- $oXmlDoc
-;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: Tom Hohmann, mLipok, GMK
 ; Remarks .......:
@@ -2379,7 +2506,7 @@ EndFunc   ;==>_XML_Load
 ;                  $bValidateOnParse    - [optional] a boolean value. Default is True. Set the MSXML ValidateOnParse property
 ;                  $bPreserveWhiteSpace - [optional] a boolean value. Default is True.
 ; Return values .: Success				- $oXmlDoc
-;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro, Lukasz Suleja, Tom Hohmann
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2423,7 +2550,7 @@ EndFunc   ;==>_XML_LoadXML
 ; Parameters ....: $oXmlDoc 		- [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath          - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: Success        	- $XML_RET_SUCCESS
-;                  Failure			- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure			- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Modified ......:
@@ -2453,7 +2580,7 @@ EndFunc   ;==>_XML_NodeExists
 ; Parameters ....: $oXmlDoc 			- [in/out] an object. A valid DOMDocument object.
 ;                  $sXML_FileFullPath   - a string value. The filename to save the $oXmlDoc content.
 ; Return values .: Success             - $XML_RET_SUCCESS
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2490,7 +2617,7 @@ EndFunc   ;==>_XML_SaveToFile
 ; Parameters ....: $oXmlDoc 			- [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath              - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: Success        		- $oNodes_coll - Nodes collection, and set @extended = $oNodes_coll.length
-;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             	- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2523,7 +2650,7 @@ EndFunc   ;==>_XML_SelectNodes
 ; Parameters ....: $oXmlDoc 			- [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath              - a string value. The XML tree path from root node (root/child/child..)
 ; Return values .: Success        		- $oNode_Selected - single node
-;                  Failure              - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure              - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2559,7 +2686,7 @@ EndFunc   ;==>_XML_SelectSingleNode
 ; Parameters ....: $oXmlDoc 			- [in/out] an object. A valid DOMDocument object.
 ;                  $sEncoding           - [optional] a string value. Default value is -1 (omitXMLDeclaration) .
 ; Return values .: Success				- XML with indent
-;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure				- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......: set $sEncoding = Default if you want to use default UDF encoding
@@ -2672,7 +2799,7 @@ EndFunc   ;==>__XML_MiscProperty_DomVersion
 ; Syntax.........: _XML_Misc_GetDomVersion()
 ; Parameters ....: none
 ; Return values .: Success		- msxml version
-;                  Failure		- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure		- $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........: Eltorro
 ; Modified ......: mLipok
 ; Remarks .......:
@@ -2691,7 +2818,7 @@ EndFunc   ;==>_XML_Misc_GetDomVersion
 ; Parameters ....: $oXmlDoc           - [in/out] an object. A valid DOMDocument object.
 ;                  $sXML_FileFullPath - [optional] a string value. Default is Default.
 ; Return values .: On Success         - Returns $XML_RET_SUCCESS
-;                  On Failure         - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  On Failure         - Returns $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ;                  TODO: @extended description
 ; Author ........: mLipok
 ; Modified ......:
@@ -2731,8 +2858,8 @@ Func _XML_MiscProperty_Encoding($sEncoding = Default)
 
 	If $sEncoding = Default Then ; get current value from static variable
 		If $sEncoding_Static = Default Then ; if not set yet, try to set default encoding
-			Switch @OSLang
-				Case 0415 ; 'pl-PL'
+			Switch _HexToString(@OSLang)
+				Case '0415' ; 'pl-PL' ; https://www.autoitscript.com/forum/topic/203594-awesome-jpm-fixes-in-autoit-track/?do=findComment&comment=1462198
 					$sEncoding_Static = 'ISO-8859-2'
 				Case Else
 					$sEncoding_Static = 'ISO-8859-1'
@@ -2775,7 +2902,7 @@ EndFunc   ;==>_XML_MiscProperty_UDFVersion
 ; Parameters ....: $avArray       - The array to modify.
 ;                  $sValue        - The value to add to the array.
 ; Return values .: Success        $XML_RET_SUCCESS and value added to array.
-;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - ERROR Enums)
+;                  Failure             - $XML_RET_FAILURE and sets the @error flag to non-zero (look in #Region XML.au3 - Enumeration - ERROR EXTENDED RETURN)
 ; Author ........:
 ; Modified ......: mLipok, guinness
 ; Remarks .......: Local version of _ArrayAdd to remove dependency on Array.au3
@@ -2979,7 +3106,10 @@ EndFunc   ;==>_XML_ErrorParser_GetDescription
 
 #Region XML.au3 - NEW TODO
 
-#CS
+#cs
+	A Beginner's Guide to the XML DOM
+	https://msdn.microsoft.com/en-us/library/aa468547.aspx
+
 	DOM Concepts
 	https://msdn.microsoft.com/en-us/library/ms764620(v=vs.85).aspx
 
@@ -3024,7 +3154,7 @@ EndFunc   ;==>_XML_ErrorParser_GetDescription
 
 	https://social.msdn.microsoft.com/Forums/en-US/b141c07f-4b2c-403a-9a0d-f64b219d316f/prettyprinting-using-mxxmlwriter-encoding-issue?forum=xmlandnetfx
 
-#CE
+#ce
 
 Func _EncodeXML($sFileToEncode)
 	; http://www.vb-helper.com/howto_encode_base64_hex.html
@@ -3044,32 +3174,6 @@ Func _EncodeXML($sFileToEncode)
 
 	Return $oNode.Text
 EndFunc   ;==>_EncodeXML
-
-
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _XML_Base64Encode
-; Description ...: @TODO
-; Syntax ........: _XML_Base64Encode(Byref $sData)
-; Parameters ....: $sData               - [in/out] a string value.
-; Return values .: None
-; Author ........: mLipok
-; Modified ......:
-; Remarks .......:
-; Related .......:
-; Link ..........:
-; Example .......: No
-; ===============================================================================================================================
-Func _XML_Base64Encode(ByRef $sData)
-	Local $oXmlDoc = ObjCreate("Msxml2.DOMDocument")
-	If @error Then Return SetError($XML_ERR_OBJCREATE, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
-
-	Local $oElement = $oXmlDoc.createElement("base64")
-	If @error Then Return SetError($XML_ERR_NODECREATE, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
-
-	$oElement.dataType = "bin.base64"
-	$oElement.nodeTypedValue = Binary($sData)
-	Return $oElement.Text
-EndFunc   ;==>_XML_Base64Encode
 
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_Base64Decode
@@ -3099,4 +3203,28 @@ Func _XML_Base64Decode(ByRef $dData, $iEncoding = $SB_UTF8)
 	Return BinaryToString($oElement.nodeTypedValue, $iEncoding)
 EndFunc   ;==>_XML_Base64Decode
 
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _XML_Base64Encode
+; Description ...: @TODO
+; Syntax ........: _XML_Base64Encode(Byref $sData)
+; Parameters ....: $sData               - [in/out] a string value.
+; Return values .: None
+; Author ........: mLipok
+; Modified ......:
+; Remarks .......:
+; Related .......:
+; Link ..........:
+; Example .......: No
+; ===============================================================================================================================
+Func _XML_Base64Encode(ByRef $sData)
+	Local $oXmlDoc = ObjCreate("Msxml2.DOMDocument")
+	If @error Then Return SetError($XML_ERR_OBJCREATE, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
+
+	Local $oElement = $oXmlDoc.createElement("base64")
+	If @error Then Return SetError($XML_ERR_NODECREATE, $XML_EXT_DEFAULT, $XML_RET_FAILURE)
+
+	$oElement.dataType = "bin.base64"
+	$oElement.nodeTypedValue = Binary($sData)
+	Return $oElement.Text
+EndFunc   ;==>_XML_Base64Encode
 #EndRegion XML.au3 - NEW TODO
