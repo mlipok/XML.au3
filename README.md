@@ -4,9 +4,9 @@ XML.au3 is an AutoIt UDF for reading, writing, querying, and transforming XML do
 
 This repository preserves the latest version that was publicly available from the AutoIt Forum Downloads entry for **XML.au3 (formerly XMLWrapperEx.au3)**:
 
-- Version: `1.1.1.13`
-- Published: March 5, 2017
-- Updated: March 5, 2017
+- Version: `1.1.1.14`
+- Published: October 22, 2021
+- Updated: October 22, 2021
 - Original download page: https://www.autoitscript.com/forum/files/file/358-xmlau3-formerly-xmlwrapperexau3/
 
 The repository import is intended to preserve that public release as a GitHub-hosted baseline for future maintenance, documentation cleanup, and further development.
