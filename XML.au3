@@ -1981,7 +1981,7 @@ EndFunc   ;==>_XML_RemoveAttribute
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_TransformNode
 ; Description ...: Process given XML file with a given XSL stylesheet, in order to transform it to given HTML file
-; Syntax ........: _XML_TransformNode($sXML_FileFullPath, $sXSL_FileFullPath, $sHTML_FileFullPath[, $iEncoding = $FO_UTF8_NOBOM])
+; Syntax ........: _XML_TransformNode($sXML_FileFullPath, $sXSL_FileFullPath, $sHTML_FileFullPath, $iEncoding = $FO_UTF8_NOBOM)
 ; Parameters ....: $sXML_FileFullPath   - a string value.
 ;                  $sXSL_FileFullPath   - a string value.
 ;                  $sHTML_FileFullPath  - a string value.
@@ -2106,7 +2106,7 @@ EndFunc   ;==>__XML_IsValidObject_DOMDocumentOrElement
 ; #INTERNAL_USE_ONLY# ===========================================================================================================
 ; Name ..........: __XML_IsValidObject_Node
 ; Description ...: Check if Object is valid IXMLDOMSelection Object
-; Syntax ........: __XML_IsValidObject_Node(ByRef $oNode[, $iNodeType = Default])
+; Syntax ........: __XML_IsValidObject_Node(ByRef $oNode, $iNodeType = Default)
 ; Parameters ....: $oNode               - [in/out] an object.
 ;                  $iNodeType           - [optional] an integer value. Default value is Default this mean any type.
 ; Return values .: Success             - $XML_RET_SUCCESS
@@ -2345,7 +2345,7 @@ EndFunc   ;==>_XML_CreateFile
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_GetAllAttribIndex
 ; Description ...: Get XML attributes collection from node element based on Xpath and specific index.
-; Syntax ........: _XML_GetAllAttribIndex(ByRef $oXmlDoc, $sXPath[, $iNodeIndex = 0])
+; Syntax ........: _XML_GetAllAttribIndex(ByRef $oXmlDoc, $sXPath, $iNodeIndex = 0)
 ; Parameters ....: $oXmlDoc 			- [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath              - a string value. The XML tree path from root node (root/child/child..)
 ;                  $iNodeIndex          - [optional] an integer value. Default is 0. Specify which node in collection should be used.
