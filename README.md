@@ -11,6 +11,18 @@ This repository preserves the latest version that was publicly available from th
 
 The repository import is intended to preserve that public release as a GitHub-hosted baseline for future maintenance, documentation cleanup, and further development.
 
+## Documentation
+
+Project documentation is available in [`docs/`](docs/README.md), including:
+
+- getting started,
+- loading, creating, and saving documents,
+- XPath and namespace handling,
+- creating and updating XML content,
+- validation and XSLT transforms,
+- API overview,
+- troubleshooting and reference links.
+
 ## Authors and contributors
 
 XML.au3 is maintained by mLipok and is based on earlier XML DOM Wrapper work by Eltorro. The UDF also preserves contributions and modifications from Weaponx, drlava, Lukasz Suleja, oblique, Mike Rerick, Tom Hohmann, guinness, GMK, and other AutoIt community contributors noted in the source history.

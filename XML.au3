@@ -1274,7 +1274,7 @@ EndFunc   ;==>_XML_GetParentNodeName
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_GetValue
 ; Description ...: Get XML values based on XPath input from root node.
-; Syntax ........: _XML_GetValue(ByRef $oXmlDoc, $sXPath, $bReturnFirstAsString = False)
+; Syntax ........: _XML_GetValue(ByRef $oXmlDoc, $sXPath[, $bReturnFirstAsString = False])
 ; Parameters ....: $oXmlDoc   - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath    - a string value. The XML tree path from root node (root/child/child..)
 ;                  $bReturnFirstAsString - [optional] a boolean value. Default is False. If True, returns the first value as a string.
@@ -1318,7 +1318,7 @@ EndFunc   ;==>_XML_GetValue
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_InsertChildNode
 ; Description ...: Insert a child node under the specified XPath Node.
-; Syntax ........: _XML_InsertChildNode(ByRef $oXmlDoc, $sXPath, $sNode, $iItem = 0, $sData = "", $sNameSpace = "")
+; Syntax ........: _XML_InsertChildNode(ByRef $oXmlDoc, $sXPath, $sNode[, $iItem = 0[, $sData = ""[, $sNameSpace = ""]]])
 ; Parameters ....: $oXmlDoc    - [in/out] an object. A valid DOMDocument or IXMLDOMElement object.
 ;                  $sXPath     - a string value. The XML tree path from root node (root/child/child..)
 ;                  $sNode      - Node name to add.
@@ -2238,7 +2238,7 @@ EndFunc   ;==>_XML_CreateChildWAttr
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_CreateDOMDocument
 ; Description ...: Creates a DOMDocument object.
-; Syntax ........: _XML_CreateDOMDocument($iDOM_Version = 3, $sEncoding = 'UTF-8', $sRoot = '')
+; Syntax ........: _XML_CreateDOMDocument([$iDOM_Version = 3[, $sEncoding = 'UTF-8'[, $sRoot = '']]])
 ; Parameters ....: $iDOM_Version        - [optional] an integer value. Default is 3.
 ;                  $sEncoding           - [optional] a string value. Default is 'UTF-8'.
 ;                  $sRoot               - [optional] a string value. Default is ''.
@@ -2302,7 +2302,7 @@ EndFunc   ;==>_XML_CreateDOMDocument
 ; #FUNCTION# ===================================================================
 ; Name ..........: _XML_CreateFile
 ; Description ...: Creates a new blank XML file with a declaration and root element.
-; Syntax ........: _XML_CreateFile($sXML_FileFullPath, $sRoot, $sEncoding = 'UTF-8', $iDOM_Version = Default)
+; Syntax ........: _XML_CreateFile($sXML_FileFullPath, $sRoot[, $sEncoding = 'UTF-8'[, $iDOM_Version = Default]])
 ; Parameters ....: $sXML_FileFullPath - The XML filename with full path to create
 ;                  $sRoot			  - The root of the XML file to create
 ;                  $sEncoding           - [optional] a string value. Default is 'UTF-8'.
@@ -2965,9 +2965,9 @@ EndFunc   ;==>_XML_Array_GetAttributesProperties
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_Array_GetNodesProperties
 ; Description ...: Get IXMLDOMNode Members - properties, and put the result to array
-; Syntax ........: _XML_Array_GetNodesProperties(ByRef $oNodeColl)
-; Parameters ....: $oNodeColl           - [in/out] an object.
-; Return values .: Array with attributes description
+; Syntax ........: _XML_Array_GetNodesProperties(ByRef $oNodes_coll)
+; Parameters ....: $oNodes_coll         - [in/out] an object. A valid IXMLDOMSelection object.
+; Return values .: On Success           - Returns an array with node properties.
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -3174,10 +3174,10 @@ EndFunc   ;==>_EncodeXML
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _XML_Base64Decode
 ; Description ...: Decodes Base64 data to a string.
-; Syntax ........: _XML_Base64Decode(ByRef $dData, $iEncoding = $SB_UTF8)
+; Syntax ........: _XML_Base64Decode(ByRef $dData[, $iEncoding = $SB_UTF8])
 ; Parameters ....: $dData               - [in/out] a binary variant value.
 ;                  $iEncoding           - [optional] an integer value. Default is $SB_UTF8.
-; Return values .: None
+; Return values .: On Success - Returns decoded string data.
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
@@ -3204,7 +3204,7 @@ EndFunc   ;==>_XML_Base64Decode
 ; Description ...: Encodes string data as Base64.
 ; Syntax ........: _XML_Base64Encode(ByRef $sData)
 ; Parameters ....: $sData               - [in/out] a string value.
-; Return values .: None
+; Return values .: On Success - Returns Base64-encoded string data.
 ; Author ........: mLipok
 ; Modified ......:
 ; Remarks .......:
