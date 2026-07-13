@@ -13,15 +13,16 @@ The repository import is intended to preserve that public release as a GitHub-ho
 
 ## Documentation
 
-Project documentation is available in [`docs/`](docs/README.md), including:
+Project documentation is available in [`docs/`](docs/README.md):
 
-- getting started,
-- loading, creating, and saving documents,
-- XPath and namespace handling,
-- creating and updating XML content,
-- validation and XSLT transforms,
-- API overview,
-- troubleshooting and reference links.
+- [Getting started](docs/getting-started.md)
+- [Loading, creating, and saving documents](docs/loading-and-saving.md)
+- [XPath, node selection, and namespaces](docs/xpath-and-selection.md)
+- [Creating and updating XML content](docs/modifying-content.md)
+- [Validation, transformation, and formatting](docs/validation-and-transforms.md)
+- [API overview](docs/api-overview.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [References and support](docs/links.md)
 
 ## Authors and contributors
 
